@@ -1,0 +1,7 @@
+numpy>=1.23
+pandas>=1.5
+statsmodels>=0.14
+matplotlib>=3.7
+scipy>=1.10
+pillow>=9.5
+cma>=3.3 

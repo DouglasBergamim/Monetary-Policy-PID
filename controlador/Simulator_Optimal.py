@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+from datetime import datetime
 from LQR_Optimal_Controller import OptimalLQRController
 
 class MonetaryPolicySimulator:
@@ -39,6 +41,10 @@ class MonetaryPolicySimulator:
         self.u_max = u_max
         self.reference = 0.0  # Meta: gap de inflação = 0
         
+        # Configurar diretório de resultados
+        self.results_dir = os.path.join('..', 'Resultados')
+        self._setup_results_directory()
+        
         # Usar controlador fornecido ou criar um otimizado
         if controller is None:
             self.controller = OptimalLQRController()
@@ -49,6 +55,18 @@ class MonetaryPolicySimulator:
         
         # Mostrar informações do controlador
         self._show_controller_info()
+    
+    def _setup_results_directory(self):
+        """
+        Configura o diretório de resultados
+        """
+        if not os.path.exists(self.results_dir):
+            os.makedirs(self.results_dir)
+            print(f"📁 Criado diretório: {self.results_dir}")
+        else:
+            print(f"📁 Usando diretório existente: {self.results_dir}")
+    
+
     
     def _show_controller_info(self):
         """
@@ -208,9 +226,63 @@ class MonetaryPolicySimulator:
             'settling_time': settling_time
         }
     
-    def plot_results(self, results, scenario_name="Simulação"):
+    def save_plot(self, results, scenario_name="Simulacao"):
+        """
+        Salva apenas o gráfico final na pasta Resultados
+        
+        Parameters:
+        -----------
+        results : dict or dict of dict
+            Resultados da simulação
+        scenario_name : str
+            Nome do cenário (não usado, mantido para compatibilidade)
+        
+        Returns:
+        --------
+        saved_file : str
+            Caminho do arquivo salvo
+        """
+        # Verificar se são resultados múltiplos ou únicos
+        is_multiple = not ('time' in results)
+        
+        # Gerar o gráfico
+        plt.ioff()  # Desabilitar modo interativo
+        
+        if is_multiple:
+            self._plot_multiple_results(results, save_mode=True)
+        else:
+            self._plot_single_result(results, "LQR Optimal Controller", save_mode=True)
+        
+        # Nome fixo do arquivo
+        filename = "LQR_final_result.png"
+        filepath = os.path.join(self.results_dir, filename)
+        
+        # Salvar o arquivo
+        plt.savefig(filepath, dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+        
+        print(f"📊 Gráfico salvo: {filename}")
+        print(f"📁 Local: {self.results_dir}")
+        
+        return filepath
+    
+    def plot_results(self, results, scenario_name="Simulação", save_plot=False):
         """
         Plota resultados da simulação
+        
+        Parameters:
+        -----------
+        results : dict or dict of dict
+            Resultados da simulação
+        scenario_name : str
+            Nome do cenário para exibição
+        save_plot : bool, default=False
+            Se deve salvar o gráfico como LQR_final_result.png
+        
+        Returns:
+        --------
+        saved_file : str or None
+            Caminho do arquivo salvo (se save_plot=True)
         """
         if isinstance(results, dict) and 'time' in results:
             # Resultado único
@@ -218,8 +290,13 @@ class MonetaryPolicySimulator:
         else:
             # Múltiplos resultados
             self._plot_multiple_results(results)
+        
+        # Salvar se solicitado
+        if save_plot:
+            return self.save_plot(results)
+        return None
     
-    def _plot_single_result(self, result, title):
+    def _plot_single_result(self, result, title, save_mode=False):
         """
         Plota resultado único
         """
@@ -308,9 +385,11 @@ class MonetaryPolicySimulator:
                                facecolor='lightblue', alpha=0.8))
         
         plt.tight_layout()
-        plt.show()
+        
+        if not save_mode:
+            plt.show()
     
-    def _plot_multiple_results(self, results):
+    def _plot_multiple_results(self, results, save_mode=False):
         """
         Plota comparação de múltiplos resultados
         """
@@ -401,7 +480,9 @@ class MonetaryPolicySimulator:
                                facecolor='lightgreen', alpha=0.8))
         
         plt.tight_layout()
-        plt.show()
+        
+        if not save_mode:
+            plt.show()
 
 # Exemplo de uso
 if __name__ == "__main__":
@@ -421,10 +502,14 @@ if __name__ == "__main__":
     # Executar simulação
     results = simulator.simulate(None, scenarios=scenarios)
     
-    # Plotar resultados
-    simulator.plot_results(results)
+    # Plotar resultados (com opção de salvamento)
+    simulator.plot_results(results, "Cenários Múltiplos", save_plot=True)
+    
+    # Ou salvar apenas o gráfico explicitamente
+    saved_file = simulator.save_plot(results)
     
     print(f"\n🎉 SIMULAÇÃO CONCLUÍDA!")
     print(f"   ✅ Controlador LQR otimizado em ação")
     print(f"   ✅ Performance superior ao PID original")
-    print(f"   ✅ Sistema estável e prático") 
+    print(f"   ✅ Sistema estável e prático")
+    print(f"   ✅ Gráfico salvo como: LQR_final_result.png") 

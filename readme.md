@@ -1,37 +1,93 @@
-# Manual do Usuário - Simulação do Modelo de Feedback de Estado
+# Economic Control Simulation – PID Tuning via Optimisation
 
-Este manual orienta a execução do código Python fornecido para simular a dinâmica do modelo de feedback de estado aplicado à política monetária brasileira.
+This repository contains a small, self-contained Python toolkit to
+simulate a simplified macro-economic model (gap of inflation driven by
+interest-rate decisions) and automatically tune a discrete PID
+controller.
 
-## Pré-requisitos
-- Python 3.8 ou superior (testado em 3.13)
-- Bibliotecas: `numpy`, `matplotlib` (opcionalmente `pandas`, `statsmodels`)
+## Contents
 
-## Como executar
-1. Salve o código em um arquivo, por exemplo `simulacao.py`.
-2. No terminal, navegue até a pasta onde o arquivo está salvo.
-3. Execute o script com:
-   ```bash
-   python simulacao.py
-   ```
-4. O código irá:
-   - Imprimir os resultados das simulações no terminal.
-   - Gerar o gráfico `simulacao_python313.png` mostrando a trajetória dos gaps.
+| Path | Description |
+|------|-------------|
+| `controlador/PID_controller.py` | Discrete PID (incremental form) with saturation. |
+| `controlador/StatePlant.py`     | Generic state-space plant with optional Tustin discretisation. |
+| `controlador/Simulator.py`      | Defines the continuous model, converts it to discrete time, tunes the PID gains with Nelder–Mead (`scipy.optimize.minimize`) and plots the closed-loop response. |
+| `requirements.txt`             | All runtime dependencies. |
 
-## Estrutura do código
-- Define as matrizes A e B baseadas nos parâmetros estimados.
-- Define o vetor de ganhos K.
-- Simula a evolução dos estados (gaps de inflação e produto) por 20 períodos.
-- Plota e salva o gráfico.
+## Quick start
 
-## Interpretação do gráfico
-- Linha azul: gap de inflação ($\pi^g$) — mostra como a inflação retorna (ou não) para a meta após o choque inicial..
-- Linha vermelha: gap de produto ($y^g$)— indica o desvio do PIB em relação ao potencial ao longo do tempo.
-- Convergência indica estabilidade.
-- O padrão de resposta permite analisar se o BC é "hawkish" (corrige rápido mas com volatilidade) ou "dovish" (mais lento mas suave).
+1. Create and activate a virtual environment (recommended):
 
-## Personalização
-- Altere `K=[1.5,0.5]` para testar outras políticas.
-- Ajuste os parâmetros de A e B para simular outros cenários econômicos.
+```bash
+python3 -m venv .venv
+source .venv/bin/activate     # Windows: .venv\Scripts\activate
+```
 
-## Contato
-Para dúvidas ou sugestões, entre em contato pelo e-mail informado no cabeçalho do paper.
+2. Install the dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Run the simulator:
+
+```bash
+python controlador/Simulator.py
+```
+
+You should see optimisation progress in the terminal followed by two
+plots: the inflation gap response and the corresponding interest-rate
+action.
+
+## Model summary
+
+The continuous-time state-space matrices are (simplified example):
+
+```math
+A_c = \begin{bmatrix}
+  0 & 1 & 0 \\
+  0 & 0 & 1 \\
+ -\tfrac{\tau_r\,\gamma + 1}{\tau_r} & -\tfrac{\gamma^2 \tau_r/4 - \omega_1^2 \tau_r + \gamma}{\tau_r} & -\tfrac{\gamma^2/4 - \omega_1^2}{\tau_r}
+\end{bmatrix},\quad
+B_c = \begin{bmatrix}0 \\ 0 \\ \dfrac{J_r}{\tau_r m}\end{bmatrix},\quad
+C = \begin{bmatrix}1 & 0 & 0\end{bmatrix}
+```
+
+where \(\gamma,\;\omega_1,\;\tau_r,\;m,\;J_r\) are physical/economic
+parameters taken from the literature.
+The model is discretised with a fixed sample period `DT` using first-order
+Euler integration in `Simulator.py`.
+
+## Controller & cost function
+
+* Controller: discrete PID with output saturation (±5 pp gap in policy
+  rate).
+* Cost: ITAE (integral of time-weighted absolute error) + penalisation
+  of control effort + variance of the final 20 % of the response.
+
+```
+J = ITAE + λ_u · ∫u² dt + λ_var · Var[y]
+```
+
+Weights `λ_u` and `λ_var` can be tuned in `Simulator.py`.
+
+## Tuning algorithm
+
+`scipy.optimize.minimize` with the Nelder–Mead simplex method searches
+for the gains inside user-defined bounds (see `bounds` variable). The
+routine stops when successive gain updates and cost improvements fall
+below the absolute tolerances `xatol`/`fatol`.
+
+## Customising
+
+* **Change the reference** `REF` or initial state `x0` directly in
+  `Simulator.py`.
+* **Add constraints**: edit the `bounds` list or modify the `cost`
+  function.
+* **Different plant**: replace `A_c`, `B_c`, `C` with your own matrices
+  (dimensions must stay consistent).
+
+## License & contact
+
+Released under the MIT license. Feel free to open issues or pull requests
+for improvements.

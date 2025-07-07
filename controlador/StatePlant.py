@@ -1,5 +1,7 @@
 from typing import Sequence
 import numpy as np
+import matplotlib.pyplot as plt
+import os
 
 class StateSpacePlant:
     """Discrete-time state-space plant model.
@@ -110,4 +112,17 @@ if __name__ == "__main__":
     plt.axhline(1.0, ls='--', color='r', label='ref=1')
     plt.title('Resposta 2ª ordem (ζ=0.2, ω=1 rad/s) – Tustin')
     plt.xlabel('tempo [s]'); plt.ylabel('saída'); plt.grid(); plt.legend()
-    plt.tight_layout(); plt.show()
+    plt.tight_layout()
+    
+    # Salvar na pasta Resultados
+    resultados_dir = "Resultados"
+    if not os.path.exists(resultados_dir):
+        os.makedirs(resultados_dir)
+    
+    filename = "StatePlant_resposta_2ordem.png"
+    filepath = os.path.join(resultados_dir, filename)
+    plt.savefig(filepath, dpi=300, bbox_inches='tight', facecolor='white')
+    print(f"📊 Gráfico salvo: {filename}")
+    print(f"📁 Local: {resultados_dir}")
+    
+    plt.show()

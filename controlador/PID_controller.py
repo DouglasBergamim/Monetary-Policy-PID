@@ -77,6 +77,7 @@ class DiscretePIDController:
 if __name__ == "__main__":
     import numpy as np
     import matplotlib.pyplot as plt
+    import os
     
     # parameters
     dt   = 0.01
@@ -108,4 +109,17 @@ if __name__ == "__main__":
     plt.subplot(1,2,2)
     plt.plot(t, us, 'tab:orange')
     plt.title('Control signal'); plt.grid()
-    plt.tight_layout(); plt.show()
+    plt.tight_layout()
+    
+    # Salvar na pasta Resultados
+    resultados_dir = "Resultados"
+    if not os.path.exists(resultados_dir):
+        os.makedirs(resultados_dir)
+    
+    filename = "PID_controller_test.png"
+    filepath = os.path.join(resultados_dir, filename)
+    plt.savefig(filepath, dpi=300, bbox_inches='tight', facecolor='white')
+    print(f"📊 Gráfico salvo: {filename}")
+    print(f"📁 Local: {resultados_dir}")
+    
+    plt.show()

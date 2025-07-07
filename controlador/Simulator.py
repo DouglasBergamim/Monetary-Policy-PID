@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
+import os
 
 from StatePlant import StateSpacePlant
 from PID_controller import DiscretePIDController
@@ -93,7 +94,20 @@ def plot(t, y, u):
     plt.plot(t, u, color='tab:orange')
     plt.xlabel('tempo (anos)'); plt.ylabel('gap juros'); plt.grid()
 
-    plt.tight_layout(); plt.show()
+    plt.tight_layout()
+    
+    # Salvar na pasta Resultados
+    resultados_dir = "Resultados"
+    if not os.path.exists(resultados_dir):
+        os.makedirs(resultados_dir)
+    
+    filename = "Simulator_PID_control.png"
+    filepath = os.path.join(resultados_dir, filename)
+    plt.savefig(filepath, dpi=300, bbox_inches='tight', facecolor='white')
+    print(f"📊 Gráfico salvo: {filename}")
+    print(f"📁 Local: {resultados_dir}")
+    
+    plt.show()
 
 
 # ---------------------------- main ----------------------------
